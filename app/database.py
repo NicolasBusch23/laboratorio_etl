@@ -1,29 +1,50 @@
+'''
+Archivo que configura y abre las conexiones a MongoDB y MySQL,
+y deja listas las sesiones para que el ETL pueda guardar y leer datos.
+'''
+
+import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from .config import DATABASE_URL, IS_SQLITE
 
+from pymongo import MongoClient
 
+# Cargar .env
+load_dotenv()
+
+# ---------- SQLAlchemy Base ---------
 class Base(DeclarativeBase):
     """Base class for SQLAlchemy models."""
     pass
 
+# ---------- MySQL ----------
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-_engine_args = {}
-if IS_SQLITE:
-    # Needed for SQLite when used with FastAPI (multithreaded)
-    _engine_args["connect_args"] = {"check_same_thread": False}
-else:
-    # Recommended for MySQL to avoid stale connections
-    _engine_args["pool_pre_ping"] = True
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True
+)
 
-engine = create_engine(DATABASE_URL, **_engine_args)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
 
 def get_db():
-    """FastAPI dependency that provides a SQLAlchemy session and ensures proper close."""
+    """FastAPI dependency for SQLAlchemy session."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+# ---------- MongoDB ----------
+MONGO_URI = os.getenv("MONGO_URI")
+MONGO_DB = os.getenv("MONGO_DB")
+MONGO_RAW_COLLECTION = os.getenv("MONGO_RAW_COLLECTION")
+
+mongo_client = MongoClient(MONGO_URI)
+mongo_db = mongo_client[MONGO_DB]
+mongo_collection = mongo_db[MONGO_RAW_COLLECTION]
