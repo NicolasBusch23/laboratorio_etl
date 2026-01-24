@@ -1,21 +1,19 @@
-from datetime import datetime, date
-from sqlalchemy import String, Text, Boolean, Integer, Date, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column, String, Text, Boolean, Integer, Date, DateTime, func
 from ..database import Base
 
 
-class Persona(Base):
-    """SQLAlchemy model for personas table."""
-    __tablename__ = "personas"
+class Juego(Base):
+    """Modelo SQLAlchemy para la tabla de juegos."""
+    __tablename__ = "juegos"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    first_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    last_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    email: Mapped[str] = mapped_column(String(254), nullable=False, unique=True, index=True)
-    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
-    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200))
+    thumbnail = Column(String(300))
+    short_description = Column(String(500))
+    genre = Column(String(100))
+    platform = Column(String(100))
+    publisher = Column(String(100))
+    developer = Column(String(100))
+    release_date = Column(String(50))
+    game_url = Column(String(300))
+    
