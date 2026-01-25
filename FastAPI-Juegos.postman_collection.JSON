@@ -24,7 +24,7 @@
       }
     },
     {
-      "name": "ETL Juegos",
+      "name": "Juegos",
       "item": [
         {
           "name": "Extract Juegos",
@@ -41,9 +41,9 @@
               "raw": "{\n  \"cantidad\": 50\n}"
             },
             "url": {
-              "raw": "{{base_url}}/etl_juegos/extract",
+              "raw": "{{base_url}}/etl/extraer",
               "host": ["{{base_url}}"],
-              "path": ["etl_juegos", "extract"]
+              "path": ["etl", "extraer"]
             }
           }
         }
