@@ -1,0 +1,53 @@
+{
+  "info": {
+    "name": "FastAPI ETL Juegos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "b1234567-aaaa-bbbb-cccc-123456789000"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "ETL Juegos",
+      "item": [
+        {
+          "name": "Extract Juegos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/etl_juegos/extract",
+              "host": ["{{base_url}}"],
+              "path": ["etl_juegos", "extract"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
