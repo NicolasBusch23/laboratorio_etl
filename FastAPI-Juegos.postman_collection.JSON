@@ -41,9 +41,9 @@
               "raw": "{\n  \"cantidad\": 50\n}"
             },
             "url": {
-              "raw": "{{base_url}}/etl/extraer",
+              "raw": "{{base_url}}/api/v1/etl/extraer",
               "host": ["{{base_url}}"],
-              "path": ["etl", "extraer"]
+              "path": ["api","v1","etl", "extraer"]
             }
           }
         }
