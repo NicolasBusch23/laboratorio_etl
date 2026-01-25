@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 from app.services.etl_service import extract_games_to_mongo
 from app.views.schemas import ExtractRequest
 
-router = APIRouter(prefix="/etl juegos", tags=["ETL Juegos"])
+router = APIRouter(prefix="/etl_juegos", tags=["ETL Juegos"])
 
 @router.post("/extract", status_code=status.HTTP_201_CREATED)
 def extract(request: ExtractRequest):
