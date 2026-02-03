@@ -58,6 +58,18 @@
       "path": ["api", "v1", "etl", "transformar"]
     }
   }
+},
+    {
+  "name": "Reset ETL",
+  "request": {
+    "method": "DELETE",
+    "header": [],
+    "url": {
+      "raw": "{{base_url}}/api/v1/etl/reset",
+      "host": ["{{base_url}}"],
+      "path": ["api", "v1", "etl", "reset"]
+    }
+  }
 }
       ]
     }
