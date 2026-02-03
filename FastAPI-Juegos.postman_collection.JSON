@@ -46,10 +46,8 @@
               "path": ["api","v1","etl", "extraer"]
             }
           }
-        }
-      ]
-    },
-    {
+        },
+          {
   "name": "Transformar Juegos",
   "request": {
     "method": "POST",
@@ -61,5 +59,7 @@
     }
   }
 }
+      ]
+    }
 ]
 }
