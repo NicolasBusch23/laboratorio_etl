@@ -94,10 +94,10 @@ def transform_and_load_games_to_mysql() -> dict:
 
             existente = db.get(Juego, game_id)  # lookup por primary key [web:179]
             if existente is None:
-                db.add(Juego(**rec))
+                db.add(Juego(**rec)) # type: ignore
             else:
                 for k, v in rec.items():
-                    setattr(existente, k, v)
+                    setattr(existente, k, v) # type: ignore
 
             procesados += 1
 
