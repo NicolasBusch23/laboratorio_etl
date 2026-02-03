@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status
 from app.services.etl_service import extract_games_to_mongo
+from app.services.etl_service import transform_and_load_games_to_mysql
 from app.views.schemas import ExtractRequest
 
 
@@ -20,3 +21,7 @@ def extract(request: ExtractRequest):
     """
     result = extract_games_to_mongo(request.cantidad)
     return result
+
+@router.post("/transformar", status_code=status.HTTP_200_OK)
+def transformar():
+    return transform_and_load_games_to_mysql()

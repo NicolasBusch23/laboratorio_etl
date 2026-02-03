@@ -48,6 +48,18 @@
           }
         }
       ]
+    },
+    {
+  "name": "Transformar Juegos",
+  "request": {
+    "method": "POST",
+    "header": [],
+    "url": {
+      "raw": "{{base_url}}/api/v1/etl/transformar",
+      "host": ["{{base_url}}"],
+      "path": ["api", "v1", "etl", "transformar"]
     }
-  ]
+  }
+}
+]
 }

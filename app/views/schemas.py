@@ -9,3 +9,12 @@ class ExtractRequest(BaseModel):
     gt = 0,  # gt = greater than → El valor debe ser mayor que 0
     description = "Cantidad de registros a extraer"  # Texto visible en /docs
 )
+    
+class TransformResponse(BaseModel):
+    """
+    Schema de salida para el endpoint TRANSFORM.
+    """
+    mensaje: str
+    registros_procesados: int
+    tabla_destino: str
+    status: int

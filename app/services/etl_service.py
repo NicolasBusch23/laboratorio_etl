@@ -1,7 +1,10 @@
 import logging
 from typing import Dict, List
 import requests
-
+import pandas as pd
+from sqlalchemy.orm import Session
+from app.database import mongo_collection, SessionLocal
+from app.models.personajes_sql import Juego
 from app.database import mongo_collection
 
 log = logging.getLogger(__name__)
@@ -48,3 +51,65 @@ def extract_games_to_mongo(cantidad: int) -> dict:
         "fuente": "FreeToGame API",
         "status": 201
     }
+def transform_and_load_games_to_mysql() -> dict:
+    """
+    Lee docs raw desde Mongo, transforma con Pandas y carga a MySQL (tabla juegos).
+    Idempotente: si el ID ya existe, actualiza; si no existe, inserta.
+    """
+    # 1) Extract desde Mongo
+    docs = list(mongo_collection.find({}))
+    if not docs:
+        return {
+            "mensaje": "Pipeline finalizado",
+            "registros_procesados": 0,
+            "tabla_destino": Juego.__tablename__,
+            "status": 200
+        }
+
+    # 2) Transform (aplanar + limpiar)
+    df = pd.json_normalize(docs)  # aplana JSON a columnas [web:166]
+
+    if "_id" in df.columns:
+        df = df.drop(columns=["_id"])
+
+    # escoger columnas (tu modelo define estas)
+    cols = [
+        "id", "title", "thumbnail", "short_description", "genre",
+        "platform", "publisher", "developer", "release_date", "game_url"
+    ]
+    cols = [c for c in cols if c in df.columns]
+    df = df[cols].copy()
+
+    # nulos -> "N/A" (o 0) como pide el enunciado
+    df = df.fillna("N/A")  # [file:104]
+
+    # 3) Load MySQL (idempotente por PK: id)
+    db: Session = SessionLocal()
+    try:
+        procesados = 0
+
+        for rec in df.to_dict(orient="records"):  # lista de dicts (1 por fila)
+            game_id = int(rec["id"])
+
+            existente = db.get(Juego, game_id)  # lookup por primary key [web:179]
+            if existente is None:
+                db.add(Juego(**rec))
+            else:
+                for k, v in rec.items():
+                    setattr(existente, k, v)
+
+            procesados += 1
+
+        db.commit()
+
+        return {
+            "mensaje": "Pipeline finalizado",
+            "registros_procesados": int(procesados),
+            "tabla_destino": Juego.__tablename__,
+            "status": 200
+        }
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
