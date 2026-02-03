@@ -1,8 +1,12 @@
 import logging
 from typing import Dict, List
 import requests
+import pandas as pd
+from sqlalchemy.orm import Session
+from app.database import mongo_collection, SessionLocal
+from app.models.personajes_sql import Juego
+from sqlalchemy import text
 
-from app.database import mongo_collection
 
 log = logging.getLogger(__name__)
 
@@ -47,4 +51,93 @@ def extract_games_to_mongo(cantidad: int) -> dict:
         "registros_guardados": guardados,
         "fuente": "FreeToGame API",
         "status": 201
+    }
+def transform_and_load_games_to_mysql() -> dict:
+    """
+    Lee docs raw desde Mongo, transforma con Pandas y carga a MySQL (tabla juegos).
+    Idempotente: si el ID ya existe, actualiza; si no existe, inserta.
+    """
+    # 1) Extract desde Mongo
+    docs = list(mongo_collection.find({}))
+    if not docs:
+        return {
+            "mensaje": "Pipeline finalizado",
+            "registros_procesados": 0,
+            "tabla_destino": Juego.__tablename__,
+            "status": 200
+        }
+
+    # 2) Transform (aplanar + limpiar)
+    df = pd.json_normalize(docs)  # aplana JSON a columnas [web:166]
+
+    if "_id" in df.columns:
+        df = df.drop(columns=["_id"])
+
+    # escoger columnas (tu modelo define estas)
+    cols = [
+        "id", "title", "thumbnail", "short_description", "genre",
+        "platform", "publisher", "developer", "release_date", "game_url"
+    ]
+    cols = [c for c in cols if c in df.columns]
+    df = df[cols].copy()
+
+    # nulos -> "N/A" (o 0) como pide el enunciado
+    df = df.fillna("N/A")  # [file:104]
+
+    # 3) Load MySQL (idempotente por PK: id)
+    db: Session = SessionLocal()
+    try:
+        procesados = 0
+
+        for rec in df.to_dict(orient="records"):  # lista de dicts (1 por fila)
+            game_id = int(rec["id"])
+
+            existente = db.get(Juego, game_id)  # lookup por primary key [web:179]
+            if existente is None:
+                db.add(Juego(**rec))
+            else:
+                for k, v in rec.items():
+                    setattr(existente, k, v)
+
+            procesados += 1
+
+        db.commit()
+
+        return {
+            "mensaje": "Pipeline finalizado",
+            "registros_procesados": int(procesados),
+            "tabla_destino": Juego.__tablename__,
+            "status": 200
+        }
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+def reset_etl_storage() -> dict:
+    """
+    Endpoint C: limpia todo (Mongo raw + tabla MySQL).
+    """
+    # 1) Mongo: borrar todos los documentos
+    mongo_result = mongo_collection.delete_many({})
+    mongo_deleted = mongo_result.deleted_count  # [file:104]
+
+    # 2) MySQL: contar filas y truncar tabla
+    db: Session = SessionLocal()
+    try:
+        mysql_deleted = db.query(Juego).count()
+        db.execute(text(f"TRUNCATE TABLE {Juego.__tablename__}"))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+    return {
+        "mensaje": "Sistema reseteado correctamente",
+        "mongo_docs_eliminados": int(mongo_deleted),
+        "mysql_rows_eliminadas": int(mysql_deleted),
+        "status": 200
     }
