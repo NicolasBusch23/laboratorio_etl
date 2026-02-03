@@ -5,7 +5,8 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from app.database import mongo_collection, SessionLocal
 from app.models.personajes_sql import Juego
-from app.database import mongo_collection
+from sqlalchemy import text
+
 
 log = logging.getLogger(__name__)
 
@@ -113,3 +114,30 @@ def transform_and_load_games_to_mysql() -> dict:
         raise
     finally:
         db.close()
+
+def reset_etl_storage() -> dict:
+    """
+    Endpoint C: limpia todo (Mongo raw + tabla MySQL).
+    """
+    # 1) Mongo: borrar todos los documentos
+    mongo_result = mongo_collection.delete_many({})
+    mongo_deleted = mongo_result.deleted_count  # [file:104]
+
+    # 2) MySQL: contar filas y truncar tabla
+    db: Session = SessionLocal()
+    try:
+        mysql_deleted = db.query(Juego).count()
+        db.execute(text(f"TRUNCATE TABLE {Juego.__tablename__}"))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+    return {
+        "mensaje": "Sistema reseteado correctamente",
+        "mongo_docs_eliminados": int(mongo_deleted),
+        "mysql_rows_eliminadas": int(mysql_deleted),
+        "status": 200
+    }

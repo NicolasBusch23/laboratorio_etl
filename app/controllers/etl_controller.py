@@ -1,7 +1,9 @@
 from fastapi import APIRouter, status
 from app.services.etl_service import extract_games_to_mongo
 from app.services.etl_service import transform_and_load_games_to_mysql
+from app.services.etl_service import reset_etl_storage
 from app.views.schemas import ExtractRequest
+from app.views.schemas import ResetResponse
 
 
 #----Versión 1 de la API - ETL Juegos----#
@@ -25,3 +27,10 @@ def extract(request: ExtractRequest):
 @router.post("/transformar", status_code=status.HTTP_200_OK)
 def transformar():
     return transform_and_load_games_to_mysql()
+
+from app.services.etl_service import reset_etl_storage
+from app.views.schemas import ResetResponse
+
+@router.delete("/reset", status_code=status.HTTP_200_OK, response_model=ResetResponse)
+def reset():
+    return reset_etl_storage()

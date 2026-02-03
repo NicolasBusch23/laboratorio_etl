@@ -18,3 +18,11 @@ class TransformResponse(BaseModel):
     registros_procesados: int
     tabla_destino: str
     status: int
+
+from pydantic import BaseModel
+
+class ResetResponse(BaseModel):
+    mensaje: str
+    mongo_docs_eliminados: int
+    mysql_rows_eliminadas: int
+    status: int
