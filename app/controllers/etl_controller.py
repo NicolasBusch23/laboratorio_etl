@@ -28,9 +28,6 @@ def extract(request: ExtractRequest):
 def transformar():
     return transform_and_load_games_to_mysql()
 
-from app.services.etl_service import reset_etl_storage
-from app.views.schemas import ResetResponse
-
 @router.delete("/reset", status_code=status.HTTP_200_OK, response_model=ResetResponse)
 def reset():
     return reset_etl_storage()

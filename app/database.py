@@ -22,7 +22,7 @@ class Base(DeclarativeBase):
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(
-    DATABASE_URL,
+    DATABASE_URL, #type: ignore
     pool_pre_ping=True
 )
 
@@ -46,5 +46,5 @@ MONGO_DB = os.getenv("MONGO_DB")
 MONGO_RAW_COLLECTION = os.getenv("MONGO_RAW_COLLECTION")
 
 mongo_client = MongoClient(MONGO_URI)
-mongo_db = mongo_client[MONGO_DB]
-mongo_collection = mongo_db[MONGO_RAW_COLLECTION]
+mongo_db = mongo_client[MONGO_DB] #type: ignore
+mongo_collection = mongo_db[MONGO_RAW_COLLECTION] #type: ignore
