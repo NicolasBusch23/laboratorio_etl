@@ -14,6 +14,6 @@ class Juego(Base):
     platform = Column(String(100))
     publisher = Column(String(100))
     developer = Column(String(100))
-    release_date = Column(String(50))
+    release_date = Column(Date)
     game_url = Column(String(300))
     

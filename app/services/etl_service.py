@@ -5,7 +5,8 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from app.database import mongo_collection, SessionLocal
 from app.models.personajes_sql import Juego
-from sqlalchemy import text
+from sqlalchemy import Date, inspect, text
+from sqlalchemy.dialects import mysql
 
 
 log = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ def _fetch_games_list(base_url: str) -> List[Dict]:
     resp.raise_for_status()
     return resp.json()  # lista completa
 
+#---Extract
 def extract_games_to_mongo(cantidad: int) -> dict:
     """
     EXTRACT: Consume la API y guarda 'cantidad' registros en MongoDB con idempotencia.
@@ -52,6 +54,9 @@ def extract_games_to_mongo(cantidad: int) -> dict:
         "fuente": "FreeToGame API",
         "status": 201
     }
+
+
+#---Transform & Load
 def transform_and_load_games_to_mysql() -> dict:
     """
     Lee docs raw desde Mongo, transforma con Pandas y carga a MySQL (tabla juegos).
@@ -73,7 +78,7 @@ def transform_and_load_games_to_mysql() -> dict:
     if "_id" in df.columns:
         df = df.drop(columns=["_id"])
 
-    # escoger columnas (tu modelo define estas)
+    # Escogencia de columnas
     cols = [
         "id", "title", "thumbnail", "short_description", "genre",
         "platform", "publisher", "developer", "release_date", "game_url"
@@ -81,12 +86,31 @@ def transform_and_load_games_to_mysql() -> dict:
     cols = [c for c in cols if c in df.columns]
     df = df[cols].copy()
 
-    # nulos -> "N/A" (o 0) como pide el enunciado
-    df = df.fillna("N/A")  # [file:104]
+    # Convertir release_date a tipo fecha (DATE) para MySQL
+    if "release_date" in df.columns:
+        df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce").dt.date
+        df["release_date"] = df["release_date"].where(df["release_date"].notna(), None)
+
+    # NULL -> "N/A" (o 0)
+    df = df.fillna("N/A") 
 
     # 3) Load MySQL (idempotente por PK: id)
     db: Session = SessionLocal()
     try:
+        inspector = inspect(db.get_bind())
+        columnas_info = inspector.get_columns(Juego.__tablename__)
+        columnas_actuales = {col["name"] for col in columnas_info}
+        if "thumbnail" not in columnas_actuales:
+            db.execute(text(f"ALTER TABLE {Juego.__tablename__} ADD COLUMN thumbnail VARCHAR(300)"))
+            db.commit()
+        columna_release = next((col for col in columnas_info if col["name"] == "release_date"), None)
+        if columna_release is None:
+            db.execute(text(f"ALTER TABLE {Juego.__tablename__} ADD COLUMN release_date DATE"))
+            db.commit()
+        elif not isinstance(columna_release["type"], (Date, mysql.DATE)):
+            db.execute(text(f"ALTER TABLE {Juego.__tablename__} MODIFY COLUMN release_date DATE"))
+            db.commit()
+
         procesados = 0
 
         for rec in df.to_dict(orient="records"):  # lista de dicts (1 por fila)
@@ -115,6 +139,8 @@ def transform_and_load_games_to_mysql() -> dict:
     finally:
         db.close()
 
+
+#---Reset
 def reset_etl_storage() -> dict:
     """
     Endpoint C: limpia todo (Mongo raw + tabla MySQL).
