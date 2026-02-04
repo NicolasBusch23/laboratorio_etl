@@ -1,14 +1,10 @@
 from .database import engine, Base
 from .controllers import etl_controller
-from .error_handlers import register_exception_handlers
 from fastapi import FastAPI
 
 def create_app() -> FastAPI:
     """Application factory."""
     app = FastAPI(title="ETL FreeToGame API", version="1.0.0")
-
-    # Register global exception handlers (domain → HTTP)
-    register_exception_handlers(app)
 
     @app.on_event("startup") #Crea automáticamente las tablas definidas en models en caso de que no existan
     def on_startup() -> None:
